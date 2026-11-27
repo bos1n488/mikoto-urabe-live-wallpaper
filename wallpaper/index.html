@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIKOTO URABE — live wallpaper</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --accent:#efa6b4;
+    --accent-soft:rgba(239,166,180,.3);
+  }
+  body[data-media="music"]{--type-accent:#efa6b4}
+  body[data-media="video"]{--type-accent:#93b8ff}
+  body[data-media="image"]{--type-accent:#8fe0cf}
+  body[data-media="unknown"]{--type-accent:#e8e0da}
+  body[data-media="idle"]{--type-accent:#c9b7b3}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:#060504}
+  body{font-family:'Quicksand',sans-serif;cursor:none}
+  #stage{
+    position:absolute;left:0;top:0;width:3840px;height:2160px;
+    transform-origin:0 0;overflow:hidden;background:#000;
+  }
+  #camera{position:absolute;inset:0;animation:camshake 11s ease-in-out infinite;will-change:transform}
+  @keyframes camshake{
+    0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+    17%{transform:translate3d(-2.4px,1.6px,0) rotate(-.012deg)}
+    39%{transform:translate3d(1.8px,-1.2px,0) rotate(.009deg)}
+    61%{transform:translate3d(-1.2px,-2px,0) rotate(-.007deg)}
+    83%{transform:translate3d(2px,1px,0) rotate(.011deg)}
+  }
+  #bg{
+    position:absolute;inset:0;
+    background:url('bg.png') center / cover no-repeat;
+    transform:scale(1.0106);
+    filter:brightness(1.006) saturate(1.065) contrast(1.028);
+  }
+  #warm{
+    position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.9;
+    background:
+      radial-gradient(52% 34% at 50.3% 12%, rgba(255,150,120,.10), rgba(255,150,120,0) 72%),
+      radial-gradient(100% 60% at 50% -6%, rgba(255,190,165,.07), rgba(255,190,165,0) 70%);
+  }
+
+  /* ---------- date / time ---------- */
+  #titles{position:absolute;inset:0;pointer-events:none}
+  .t{
+    position:absolute;color:#fff;white-space:pre;text-align:center;
+    transform:translate(-50%,-50%);line-height:1;
+  }
+  #day{
+    left:1936.75px;top:360px;
+    font-family:'Anurati',sans-serif;font-size:176px;letter-spacing:.01em;
+    text-shadow:0 0 12px rgba(255,250,244,.62),0 0 34px rgba(255,238,225,.48),0 0 80px rgba(255,210,188,.34),0 0 150px rgba(255,170,145,.2),0 2px 2px rgba(120,60,40,.08);
+  }
+  #date{
+    left:1924.2px;top:533px;
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:46px;letter-spacing:.07em;
+    text-shadow:0 0 12px rgba(255,248,240,.55),0 0 34px rgba(255,222,200,.3),0 0 70px rgba(255,190,165,.2);
+  }
+  #clock{
+    left:1929.8px;top:651px;
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:40px;letter-spacing:.02em;
+    text-shadow:0 0 12px rgba(255,248,240,.55),0 0 32px rgba(255,220,198,.28),0 0 64px rgba(255,190,165,.18);
+  }
+
+  /* ---------- player ---------- */
+  #player{position:absolute;inset:0}
+  #album{
+    --art:url('album.png');
+    position:absolute;left:1502px;top:1578px;width:144px;height:144px;
+    border-radius:28px;
+    background-image:var(--art);background-size:cover;background-position:center;
+    box-shadow:0 0 16px 0 var(--accent-soft),0 0 36px 2px rgba(238,132,158,.08);
+    pointer-events:auto;cursor:pointer;
+  }
+  #album::before{
+    content:"";position:absolute;inset:-13%;border-radius:38px;z-index:-1;
+    background-image:var(--art);background-size:cover;background-position:center;
+    filter:blur(20px) saturate(1.45) brightness(1.04);
+    opacity:.3;
+  }
+  #album::after{
+    content:"";position:absolute;inset:0;border-radius:28px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+    opacity:.7;pointer-events:none;
+  }
+  #album.idle{cursor:default}
+  #album.idle::after{opacity:.35}
+
+  #media-badge{
+    position:absolute;right:8px;top:8px;width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;z-index:3;
+    background:rgba(12,9,10,.55);border:1px solid rgba(255,255,255,.24);
+    color:#fff;backdrop-filter:blur(6px);pointer-events:none;
+  }
+  #media-badge svg{
+    width:17px;height:17px;display:none;fill:none;stroke:currentColor;
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+  }
+  #media-badge svg .fill{fill:currentColor;stroke:none}
+  #album.placeholder #media-badge,#album.idle #media-badge{display:none}
+  #album[data-type="music"] .mi-music,
+  #album[data-type="video"] .mi-video,
+  #album[data-type="image"] .mi-image,
+  #album[data-type="unknown"] .mi-unknown{display:block}
+
+  #pp-overlay{
+    position:absolute;inset:0;z-index:2;border-radius:28px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(8,6,7,.16);opacity:0;transition:opacity .18s ease;
+    pointer-events:none;
+  }
+  #album:hover #pp-overlay,#album.paused #pp-overlay{opacity:1}
+  #album.paused #pp-overlay{background:rgba(8,6,7,.34)}
+  #album.idle #pp-overlay{display:none}
+  .pp-ring{
+    width:56px;height:56px;border-radius:50%;
+    border:1.5px solid rgba(255,255,255,.72);
+    background:rgba(14,10,10,.42);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 22px rgba(0,0,0,.35);
+  }
+  .pp-ring svg{width:21px;height:21px;fill:#fff;display:none}
+  #album:not(.paused) .pp-ring .pp-pause{display:block}
+  #album.paused .pp-ring .pp-play{display:block}
+
+  .pl{
+    position:absolute;left:1662px;white-space:pre;line-height:1;color:#f6f1ec;
+    max-width:620px;overflow:hidden;text-overflow:ellipsis;
+  }
+  #p-title{top:1586px;font-family:'Nasalization';font-size:38px;max-width:700px;text-shadow:0 0 18px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.35)}
+  #p-artist{top:1640px;font-family:'Nasalization';font-size:27px;color:#d9d3ce;opacity:.94;text-shadow:0 0 14px rgba(0,0,0,.5)}
+  #p-album{top:1688px;font-family:'Nasalization';font-size:27px;color:#cfc9c4;opacity:.9;text-shadow:0 0 14px rgba(0,0,0,.5)}
+
+  #bar{
+    position:absolute;left:1497.7px;top:1747px;width:884px;height:6px;
+    border-radius:4px;background:rgba(255,255,255,.94);
+    box-shadow:0 0 0 1px rgba(20,14,10,.38),0 1px 3px rgba(0,0,0,.35);
+    pointer-events:auto;cursor:pointer;
+  }
+  #bar::after{content:"";position:absolute;left:0;right:0;top:-12px;bottom:-12px}
+  #bar:hover{background:#fff}
+  #bar-fill{
+    position:absolute;left:0;top:0;bottom:0;width:0%;
+    border-radius:4px;
+    background:var(--accent);
+    box-shadow:0 0 0 1px rgba(255,255,255,.18);
+    pointer-events:none;
+  }
+  body[data-media="idle"] #bar{opacity:.32;cursor:default}
+  #p-time{
+    position:absolute;left:2255px;top:1706px;transform:translate(-50%,-50%);
+    font-family:'Nasalization';font-size:31px;color:#f3eee9;opacity:.94;
+    white-space:pre;letter-spacing:.02em;
+    text-shadow:0 0 14px rgba(255,250,240,.25),0 1px 3px rgba(0,0,0,.4);
+  }
+  #bars{
+    position:absolute;left:2325px;top:1638px;transform:translate(-50%,-50%);
+    height:46px;display:flex;align-items:center;gap:7px;
+  }
+  #bars i{
+    display:block;width:5px;border-radius:4px;background:#f1ece7;
+    box-shadow:0 0 10px rgba(255,245,235,.35);
+  }
+  #type-glyph{
+    position:absolute;left:2325px;top:1638px;transform:translate(-50%,-50%);
+    width:44px;height:44px;display:none;align-items:center;justify-content:center;
+    color:var(--accent);filter:drop-shadow(0 0 10px var(--accent-soft));
+  }
+  #type-glyph svg{width:34px;height:34px;display:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  #type-glyph svg .fill{fill:currentColor;stroke:none}
+  body[data-media="video"] #bars,body[data-media="image"] #bars,body[data-media="unknown"] #bars,body[data-media="idle"] #bars{display:none}
+  body[data-media="music"] #type-glyph{display:none}
+  body[data-media="video"] #type-glyph,body[data-media="image"] #type-glyph,body[data-media="unknown"] #type-glyph,body[data-media="idle"] #type-glyph{display:flex}
+  body[data-media="video"] .g-video,
+  body[data-media="image"] .g-image,
+  body[data-media="unknown"] .g-unknown,
+  body[data-media="idle"] .g-idle{display:block}
+  body[data-media="idle"] #type-glyph{opacity:.4}
+
+  /* ---------- rain / grade ---------- */
+  #rain{
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 46%,rgba(0,0,0,.72) 68%,rgba(0,0,0,.34) 100%);
+    mask-image:linear-gradient(to bottom,#000 0%,#000 46%,rgba(0,0,0,.72) 68%,rgba(0,0,0,.34) 100%);
+  }
+  #grade{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(125% 82% at 50% -8%, rgba(255,210,188,.08), rgba(255,210,188,0) 58%),
+      radial-gradient(150% 108% at 50% 42%, rgba(24,10,6,0) 42%, rgba(26,11,6,.18) 70%, rgba(22,9,5,.40) 88%, rgba(32,13,7,.56) 100%);
+  }
+  #bloom{
+    position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;
+    background:
+      radial-gradient(36% 24% at 50.4% 17.4%, rgba(255,236,224,.12), rgba(255,236,224,0) 70%),
+      radial-gradient(26% 18% at 50.1% 25%, rgba(255,226,209,.09), rgba(255,226,209,0) 70%);
+  }
+  #hint{
+    position:fixed;right:22px;bottom:16px;z-index:30;
+    font-family:'Quicksand',sans-serif;font-weight:700;
+    font-size:clamp(10px,1.05vw,15px);letter-spacing:.08em;
+    color:rgba(255,252,248,.72);text-shadow:0 2px 10px rgba(0,0,0,.6);
+    opacity:0;pointer-events:none;transition:opacity .9s ease;
+  }
+  #hint.show{opacity:.7}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="camera">
+    <div id="bg"></div>
+    <div id="warm"></div>
+
+    <div id="titles">
+      <div id="day" class="t">S A T U R D A Y</div>
+      <div id="date" class="t">31 MAY 2025</div>
+      <div id="clock" class="t">-05:10:-41</div>
+    </div>
+
+    <div id="player">
+      <div id="album" data-type="music" title="Play / pause">
+        <div id="media-badge" aria-hidden="true">
+          <svg class="mi-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <svg class="mi-video" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M7 5v14M17 5v14M2.5 9h19M2.5 15h19"/></svg>
+          <svg class="mi-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <svg class="mi-unknown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path class="fill" d="m10 8 6 4-6 4z"/></svg>
+        </div>
+        <div id="pp-overlay" aria-hidden="true">
+          <span class="pp-ring">
+            <svg class="pp-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4.2" height="16" rx="1"/><rect x="13.8" y="4" width="4.2" height="16" rx="1"/></svg>
+            <svg class="pp-play" viewBox="0 0 24 24"><path d="M8 4.8 20 12 8 19.2z"/></svg>
+          </span>
+        </div>
+      </div>
+      <div id="p-title" class="pl">Nintendo</div>
+      <div id="p-artist" class="pl">Alkaloides</div>
+      <div id="p-album" class="pl">Alkaloides</div>
+      <div id="bar"><div id="bar-fill"></div></div>
+      <div id="p-time">03:02</div>
+      <div id="bars"><i></i><i></i><i></i></div>
+      <div id="type-glyph" aria-hidden="true">
+        <svg class="g-video" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M7 5v14M17 5v14M2.5 9h19M2.5 15h19"/></svg>
+        <svg class="g-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        <svg class="g-unknown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path class="fill" d="m10 8 6 4-6 4z"/></svg>
+        <svg class="g-idle" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+    </div>
+
+    <canvas id="rain" width="1920" height="1080"></canvas>
+    <div id="grade"></div>
+    <div id="bloom"></div>
+  </div>
+</div>
+<div id="hint">F — fullscreen · SPACE — pause · click the cover</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const W = 3840, H = 2160;
+  const stage = document.getElementById('stage');
+
+  function layout(){
+    const s = Math.max(innerWidth / W, innerHeight / H);
+    stage.style.transform = `scale(${s})`;
+    stage.style.left = ((innerWidth - W * s) / 2) + 'px';
+    stage.style.top  = ((innerHeight - H * s) / 2) + 'px';
+  }
+  addEventListener('resize', layout);
+  layout();
+
+  /* --- fit display text to the widths measured from the original scene --- */
+  function fit(el, target, tracking){
+    el.style.letterSpacing = tracking + 'em';
+    el.style.fontSize = '100px';
+    const w = el.offsetWidth || 1;
+    const fs = 100 * target / w;
+    el.style.fontSize = fs.toFixed(2) + 'px';
+  }
+
+  const dayEl = document.getElementById('day');
+  const dateEl = document.getElementById('date');
+  const clockEl = document.getElementById('clock');
+  const pTitle = document.getElementById('p-title');
+  const pArtist = document.getElementById('p-artist');
+  const pAlbum = document.getElementById('p-album');
+  const pTime = document.getElementById('p-time');
+
+  const fitAll = () => {
+    // Measure against the reference frame from the preview, not against
+    // whichever weekday happens to be today, so the type size stays fixed.
+    const current = {
+      day: dayEl.textContent,
+      date: dateEl.textContent,
+      clock: clockEl.textContent,
+      time: pTime.textContent
+    };
+    dayEl.textContent = 'S A T U R D A Y';
+    dateEl.textContent = '31 MAY 2025';
+    clockEl.textContent = '-05:10:-41';
+    pTime.textContent = '03:02';
+
+    fit(dayEl, 1230, .01);
+    fit(dateEl, 252, .07);
+    fit(clockEl, 256, .02);
+    fit(pTitle, 158, .01);
+    fit(pArtist, 124, .01);
+    fit(pAlbum, 124, .01);
+    fit(pTime, 68, .01);
+
+    dayEl.textContent = current.day;
+    dateEl.textContent = current.date;
+    clockEl.textContent = current.clock;
+    pTime.textContent = current.time;
+  };
+  fitAll();
+  document.fonts.ready.then(fitAll);
+
+  /* --- live clock, exactly like the scene's scripts --- */
+  const DAYS = ['S U N D A Y','M O N D A Y','T U E S D A Y','W E D N E S D A Y','T H U R S D A Y','F R I D A Y','S A T U R D A Y'];
+  const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const pad = n => String(n).padStart(2,'0');
+
+  function tick(){
+    const d = new Date();
+    let h = d.getHours() % 12; if (!h) h = 12;
+    dayEl.textContent = DAYS[d.getDay()];
+    dateEl.textContent = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    clockEl.textContent = `-${pad(h)}:${pad(d.getMinutes())}:-${pad(d.getSeconds())}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* --- Windows media bridge ---------------------------------------------
+     The wallpaper asks a tiny local helper (media-bridge) for the current
+     Windows media session. Read-only state and thumbnails stay on 127.0.0.1.
+  ---------------------------------------------------------------------- */
+  const API = 'http://127.0.0.1:47823';
+  const albumEl = document.getElementById('album');
+  const barFill = document.getElementById('bar-fill');
+  const bar = document.getElementById('bar');
+
+  const TYPE_ACCENTS = {
+    music:  [350, 68, 79],
+    video:  [219, 100, 79],
+    image:  [168, 60, 72],
+    unknown:[30, 20, 86],
+    idle:   [10, 15, 73]
+  };
+
+  let hasMedia = false;
+  let playing = false;
+  let duration = 0;
+  let basePos = 0;
+  let baseStamp = performance.now();
+  let lastTimeText = '';
+  let bridgeFails = 0;
+  let artKey = '';
+  let pollTimer = 0;
+  let lastSyncPos = -1;
+  let lastTrackKey = '';
+
+  function setAccent(type, hsl){
+    const c = hsl || TYPE_ACCENTS[type] || TYPE_ACCENTS.unknown;
+    document.documentElement.style.setProperty('--accent', `hsl(${c[0]}, ${c[1]}%, ${c[2]}%)`);
+    document.documentElement.style.setProperty('--accent-soft', `hsla(${c[0]}, ${c[1]}%, ${c[2]}%, .3)`);
+  }
+
+  function rgbToHsl(r, g, b){
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    const l = (mx + mn) / 2;
+    if (mx === mn) return [0, 0, l];
+    const d = mx - mn;
+    const s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    let h;
+    if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    return [h * 60, s, l];
+  }
+
+  function accentFromImage(img){
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 32;
+      const g = canvas.getContext('2d', { willReadFrequently: true });
+      g.drawImage(img, 0, 0, 32, 32);
+      const data = g.getImageData(0, 0, 32, 32).data;
+      let best = null, bestScore = -1;
+      for (let i = 0; i < data.length; i += 4){
+        if (data[i + 3] < 150) continue;
+        const r = data[i], gr = data[i + 1], b = data[i + 2];
+        const mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
+        const sat = mx ? (mx - mn) / mx : 0;
+        const lum = (r + gr + b) / 765;
+        let score = sat * 1.55 + (1 - Math.abs(lum - .55)) * .35;
+        if (mx > 245 && mn > 235) score -= .9;
+        if (score > bestScore){ bestScore = score; best = [r, gr, b]; }
+      }
+      if (!best) return null;
+      const [h, s, l] = rgbToHsl(...best);
+      return [
+        Math.round(h),
+        Math.round(Math.max(.45, Math.min(.8, s * .9 + .15)) * 100),
+        Math.round(Math.max(.62, Math.min(.8, l * .6 + .35)) * 100)
+      ];
+    } catch { return null; }
+  }
+
+  function placeholderCover(type, hsl){
+    const accent = `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)`;
+    const common = `fill="none" stroke="${accent}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"`;
+    const icons = {
+      music: `<g transform="translate(120 120) scale(11.4)" ${common}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></g>`,
+      video: `<g transform="translate(120 120) scale(11.4)" ${common}><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M7 5v14M17 5v14M2.5 9h19M2.5 15h19"/></g>`,
+      image: `<g transform="translate(120 120) scale(11.4)" ${common}><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15-5-5L5 21"/></g>`,
+      unknown: `<g transform="translate(120 120) scale(11.4)" ${common}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z" fill="${accent}" stroke="none"/></g>`,
+      idle: `<g transform="translate(120 120) scale(11.4)" ${common} opacity=".8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></g>`
+    };
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+      <defs>
+        <radialGradient id="bg" cx="30%" cy="18%" r="95%">
+          <stop offset="0" stop-color="#241b1f"/>
+          <stop offset=".55" stop-color="#151113"/>
+          <stop offset="1" stop-color="#0b090a"/>
+        </radialGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="24"/></filter>
+      </defs>
+      <rect width="512" height="512" fill="url(#bg)"/>
+      <circle cx="356" cy="152" r="136" fill="${accent}" opacity=".13" filter="url(#glow)"/>
+      <circle cx="256" cy="256" r="178" fill="none" stroke="${accent}" stroke-opacity=".16" stroke-width="1.5"/>
+      <rect x="22" y="22" width="468" height="468" rx="46" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
+      ${icons[type] || icons.unknown}
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  function setArt(url, type, real){
+    const key = real ? url : `placeholder:${type}`;
+    if (key === artKey) return;
+    artKey = key;
+
+    if (real){
+      albumEl.classList.remove('placeholder');
+      albumEl.style.setProperty('--art', `url("${url}")`);
+      setAccent(type);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const hsl = accentFromImage(img);
+        if (hsl) setAccent(type, hsl);
+      };
+      img.src = url;
+    } else {
+      albumEl.classList.add('placeholder');
+      const hsl = TYPE_ACCENTS[type] || TYPE_ACCENTS.unknown;
+      albumEl.style.setProperty('--art', `url("${placeholderCover(type, hsl)}")`);
+      setAccent(type, hsl);
+    }
+  }
+
+  function setLine(el, text){
+    el.textContent = text;
+    el.title = text;
+  }
+
+  function formatTime(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor(sec / 60) % 60;
+    const s = sec % 60;
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+
+  function currentPosition(now){
+    let pos = basePos + (playing ? (now - baseStamp) / 1000 : 0);
+    if (duration > 0) pos = Math.min(pos, duration);
+    return Math.max(0, pos);
+  }
+
+  function updateTimeline(now){
+    const pos = currentPosition(now);
+    barFill.style.width = duration > 0 ? (pos / duration * 100).toFixed(3) + '%' : '0%';
+    const txt = duration > 0 ? formatTime(duration - pos) : '--:--';
+    if (txt !== lastTimeText){
+      pTime.textContent = txt;
+      lastTimeText = txt;
+    }
+  }
+
+  function applyState(s){
+    bridgeFails = 0;
+    if (!s || !s.hasSession){ applyIdle(); return; }
+
+    hasMedia = true;
+    const type = ['music', 'video', 'image'].includes(s.mediaType) ? s.mediaType : 'unknown';
+    document.body.dataset.media = type;
+    albumEl.dataset.type = type;
+    albumEl.classList.remove('idle');
+
+    setLine(pTitle, s.title || 'Untitled');
+    setLine(pArtist, s.artist || (type === 'video' ? 'Video' : 'Unknown artist'));
+    setLine(pAlbum, s.album || (type === 'video' ? 'Video' : (s.source || 'Unknown album')));
+
+    duration = Math.max(0, s.duration || 0);
+    const reported = Math.max(0, s.position || 0);
+    const now = performance.now();
+    const trackKey = `${s.sourceId}|${s.title}|${s.mediaType}|${s.duration}`;
+    const trackChanged = trackKey !== lastTrackKey;
+    // Some sites (notably YouTube in Chromium) leave the system timeline at
+    // 0. Keep our local interpolation in that case instead of snapping back.
+    if (trackChanged || !hasMedia || !s.playing || Math.abs(reported - lastSyncPos) > 0.6){
+      basePos = duration > 0 ? Math.min(duration, reported) : reported;
+      baseStamp = now;
+    }
+    lastSyncPos = reported;
+    lastTrackKey = trackKey;
+    playing = !!s.playing;
+    albumEl.classList.toggle('paused', !playing);
+
+    if (s.thumbUsable && s.thumbVersion){
+      setArt(`${API}/thumb?v=${encodeURIComponent(s.thumbVersion)}`, type, true);
+    } else {
+      setArt(null, type, false);
+    }
+  }
+
+  function applyIdle(){
+    hasMedia = false;
+    playing = false;
+    duration = 0;
+    basePos = 0;
+    document.body.dataset.media = 'idle';
+    albumEl.dataset.type = 'idle';
+    albumEl.classList.add('idle', 'paused');
+    setLine(pTitle, 'Nothing playing');
+    setLine(pArtist, 'music or video');
+    setLine(pAlbum, 'Windows media');
+    setArt(null, 'idle', false);
+    barFill.style.width = '0%';
+    if (lastTimeText !== '--:--'){ pTime.textContent = '--:--'; lastTimeText = '--:--'; }
+  }
+
+  const CONTROL_TOKEN = 'mk-47f2a9';
+  function mediaCommand(path){
+    const sep = path.includes('?') ? '&' : '?';
+    return fetch(`${API}${path}${sep}token=${CONTROL_TOKEN}`, {
+      cache: 'no-store'
+    }).catch(() => {});
+  }
+
+  function togglePlayback(){
+    if (!hasMedia) return;
+    const now = performance.now();
+    basePos = currentPosition(now);
+    baseStamp = now;
+    playing = !playing;
+    albumEl.classList.toggle('paused', !playing);
+    mediaCommand('/control/toggle');
+  }
+
+  albumEl.addEventListener('click', togglePlayback);
+
+  bar.addEventListener('click', e => {
+    if (!hasMedia || duration <= 0) return;
+    const r = bar.getBoundingClientRect();
+    const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const target = f * duration;
+    basePos = target;
+    baseStamp = performance.now();
+    updateTimeline(performance.now());
+    mediaCommand(`/control/seek?pos=${encodeURIComponent(target.toFixed(3))}`);
+  });
+
+  async function pollMedia(){
+    try {
+      const res = await fetch(`${API}/state`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(2600)
+      });
+      if (!res.ok) throw new Error('state');
+      const state = await res.json();
+      applyState(state);
+    } catch {
+      bridgeFails++;
+      if (hasMedia && bridgeFails < 3){
+        playing = false;
+        albumEl.classList.add('paused');
+      } else {
+        applyIdle();
+      }
+    }
+    pollTimer = setTimeout(pollMedia, 1000);
+  }
+
+  const hint = document.getElementById('hint');
+  setTimeout(() => hint.classList.add('show'), 700);
+  setTimeout(() => hint.classList.remove('show'), 7200);
+
+  addEventListener('keydown', e => {
+    if (e.code === 'Space'){
+      e.preventDefault();
+      togglePlayback();
+    } else if (e.key === 'f' || e.key === 'F'){
+      if (!document.fullscreenElement){
+        document.documentElement.requestFullscreen?.().catch(() => {});
+      } else {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    }
+  });
+
+  setTimeout(pollMedia, 350);
+
+  /* --- rain --- */
+  const canvas = document.getElementById('rain');
+  const ctx = canvas.getContext('2d');
+  const RW = canvas.width, RH = canvas.height;
+  const COUNT = 155;
+
+  let rainLast = performance.now();
+  const drops = [];
+  function reset(d, initial){
+    d.z = 0.16 + Math.random() * 0.84;
+    d.x = Math.random() * (RW * 1.14) - RW * 0.07;
+    d.y = initial ? Math.random() * RH : -Math.random() * RH * 0.3;
+    d.len = (16 + Math.random() * 105) * (0.55 + d.z * 0.65);
+    if (Math.random() < 0.1) d.len *= 2.1;
+    d.spd = (620 + 1750 * d.z) * (0.78 + Math.random() * 0.5);
+    d.w = 0.5 + d.z * 0.8;
+    d.a = 0.03 + d.z * 0.14;
+    d.drift = -0.016 - Math.random() * 0.026;
+  }
+  for (let i = 0; i < COUNT; i++){
+    const d = {};
+    reset(d, true);
+    drops.push(d);
+  }
+
+  function rain(now){
+    const dt = Math.min(0.05, (now - rainLast) / 1000);
+    rainLast = now;
+    ctx.clearRect(0, 0, RW, RH);
+    ctx.lineCap = 'round';
+    for (const d of drops){
+      d.y += d.spd * dt;
+      d.x += d.spd * dt * d.drift;
+      if (d.y - d.len > RH || d.x < -RW * 0.1){
+        reset(d, false);
+      }
+      const x2 = d.x + d.len * d.drift;
+      const y2 = d.y - d.len;
+      ctx.strokeStyle = `rgba(255,241,234,${(d.a * 0.18).toFixed(3)})`;
+      ctx.lineWidth = d.w * 2.4;
+      ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(d.x, d.y); ctx.stroke();
+      ctx.strokeStyle = `rgba(255,251,247,${d.a.toFixed(3)})`;
+      ctx.lineWidth = d.w;
+      ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(d.x, d.y); ctx.stroke();
+    }
+  }
+
+  /* --- equalizer bars --- */
+  const eqBars = [...document.querySelectorAll('#bars i')];
+
+  let raf;
+  function frame(now){
+    rain(now);
+    updateTimeline(now);
+    const t = now / 1000;
+    const levels = [
+      0.55 + 0.35 * Math.abs(Math.sin(t * 2.15 + 0.2)),
+      0.42 + 0.48 * Math.abs(Math.sin(t * 3.31 + 1.7)),
+      0.7  + 0.3  * Math.abs(Math.sin(t * 1.73 + 3.1))
+    ];
+    for (let i = 0; i < 3; i++){
+      const h = (12 + 34 * levels[i] * (playing ? 1 : 0.35)).toFixed(1);
+      eqBars[i].style.height = h + 'px';
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  raf = requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden){ cancelAnimationFrame(raf); }
+    else { rainLast = performance.now(); baseStamp = performance.now(); raf = requestAnimationFrame(frame); }
+  });
+})();
+</script>
+</body>
+</html>

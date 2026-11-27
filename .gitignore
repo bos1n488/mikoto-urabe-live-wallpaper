@@ -1,0 +1,8 @@
+media-bridge/bin/
+media-bridge/obj/
+media-bridge/app/*.log
+*.log
+.vs/
+.idea/
+Thumbs.db
+.DS_Store
