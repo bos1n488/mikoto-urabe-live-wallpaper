@@ -671,20 +671,28 @@
 
   /* --- equalizer bars --- */
   const eqBars = [...document.querySelectorAll('#bars i')];
+  let barsInitialized = false;
 
   let raf;
   function frame(now){
     rain(now);
     updateTimeline(now);
-    const t = now / 1000;
-    const levels = [
-      0.55 + 0.35 * Math.abs(Math.sin(t * 2.15 + 0.2)),
-      0.42 + 0.48 * Math.abs(Math.sin(t * 3.31 + 1.7)),
-      0.7  + 0.3  * Math.abs(Math.sin(t * 1.73 + 3.1))
-    ];
-    for (let i = 0; i < 3; i++){
-      const h = (12 + 34 * levels[i] * (playing ? 1 : 0.35)).toFixed(1);
-      eqBars[i].style.height = h + 'px';
+    if (playing){
+      const t = now / 1000;
+      const levels = [
+        0.55 + 0.35 * Math.abs(Math.sin(t * 2.15 + 0.2)),
+        0.42 + 0.48 * Math.abs(Math.sin(t * 3.31 + 1.7)),
+        0.7  + 0.3  * Math.abs(Math.sin(t * 1.73 + 3.1))
+      ];
+      for (let i = 0; i < 3; i++){
+        const h = (12 + 34 * levels[i]).toFixed(1);
+        eqBars[i].style.height = h + 'px';
+      }
+      barsInitialized = true;
+    } else if (!barsInitialized){
+      const seed = [16, 30, 22];
+      eqBars.forEach((b, i) => { b.style.height = seed[i] + 'px'; });
+      barsInitialized = true;
     }
     raf = requestAnimationFrame(frame);
   }
