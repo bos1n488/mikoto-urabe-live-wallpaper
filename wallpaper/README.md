@@ -66,6 +66,8 @@ Media Session и отдаёт состояние на `http://127.0.0.1:47823`. 
 
 - Это самостоятельная реконструкция, а не запуск движка Wallpaper Engine.
 - Оригинальные обои: **MIKOTO URABE** (Nazo No Kanojo X),
-  Steam Workshop `3491127388`, автор `negro_nazi`.
+  Steam Workshop [`3491127388`](https://steamcommunity.com/sharedfiles/filedetails/?id=3491127388),
+  автор [negro_nazi](https://steamcommunity.com/profiles/76561198881818064).
+  Все права на художественные материалы принадлежат автору оригинала.
 - В архиве нет аудио: обои не воспроизводят музыку сами, а показывают то,
   что играет в системе.

@@ -1,5 +1,12 @@
 # MIKOTO URABE — live wallpaper без Wallpaper Engine
 
+> **Оригинальные обои:** MIKOTO URABE (Nazo No Kanojo X)  
+> **Автор:** [negro_nazi](https://steamcommunity.com/profiles/76561198881818064)  
+> **Steam Workshop:** [3491127388](https://steamcommunity.com/sharedfiles/filedetails/?id=3491127388)  
+> Все права на художественные материалы принадлежат автору оригинала. Это
+> фанатская реконструкция; если автор попросит снять репозиторий — он будет
+> удалён. Подробнее: [CREDITS.md](CREDITS.md).
+
 Браузерная реконструкция сцены MIKOTO URABE (Nazo No Kanojo X) плюс
 локальный Windows media bridge. Wallpaper Engine не нужен.
 
@@ -56,8 +63,11 @@ dotnet publish media-bridge\MikotoMediaBridge.csproj -c Release -r win-x64 `
 
 ## Оригинал и права
 
-Оригинальные обои: **MIKOTO URABE** (Nazo No Kanojo X), Steam Workshop
-[`3491127388`](https://steamcommunity.com/sharedfiles/filedetails/?id=3491127388),
-автор **negro_nazi**. Все художественные материалы принадлежат автору
-оригинала. Репозиторий задуман как личная реконструкция; перед публикацией
-проверьте права на исходные ассеты.
+- **Оригинальные обои:** MIKOTO URABE (Nazo No Kanojo X)
+- **Автор:** [negro_nazi](https://steamcommunity.com/profiles/76561198881818064)
+- **Steam Workshop:** [`3491127388`](https://steamcommunity.com/sharedfiles/filedetails/?id=3491127388)
+
+Все права на фон, персонажа, обложки и другие художественные материалы
+принадлежат автору оригинала. Код реконструкции (HTML/JS/C#) написан для
+личного использования. Если автор оригинальных обоев попросит убрать
+репозиторий — он будет снят. Полный список кредитов: [CREDITS.md](CREDITS.md).
